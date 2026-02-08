@@ -1,0 +1,91 @@
+- name: Install required packages for Docker
+  apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Add Docker GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+    state: present
+
+- name: Install Docker and docker-compose-plugin
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: yes
+
+
+- name: Enable docker
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+- name: create docker group
+  ansible.builtin.group:
+    name: docker
+    state: present
+
+- name: add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+- name: Create project dir
+  file:
+    path: "{{ db_stack_project_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create backup dir
+  file:
+    path: "{{ db_stack_backup_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Render docker-compose
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ db_stack_project_dir }}/docker-compose.yml"
+  notify: restart stack
+
+- name: Render pgbouncer.ini
+  template:
+    src: pgbouncer.ini.j2
+    dest: "{{ db_stack_project_dir }}/pgbouncer.ini"
+  notify: restart stack
+
+- name: Render userlist
+  template:
+    src: userlist.txt.j2
+    dest: "{{ db_stack_project_dir }}/userlist.txt"
+    mode: "0644"
+  notify: restart stack
+
+- name: Copy pg_backup.sh script
+  copy:
+    src: pg_backup.sh
+    dest: "{{ db_stack_project_dir }}/pg_backup.sh"
+    mode: "0755"
+  notify: restart stack
+
+- name: Start stack
+  command: docker compose up -d
+  args:
+    chdir: "{{ db_stack_project_dir }}"

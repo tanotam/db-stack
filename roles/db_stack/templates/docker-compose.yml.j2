@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: {{ postgres_image }}
+    environment:
+      POSTGRES_DB: {{ postgres_db }}
+      POSTGRES_USER: {{ postgres_user }}
+      POSTGRES_PASSWORD: {{ postgres_password }}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_user }} -d {{ postgres_db }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: {{ pgbouncer_image }}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:{{ pgbouncer_port }}:6432"
+    volumes:
+      - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./userlist.txt:/etc/pgbouncer/userlist.txt
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "6432", "-d", {{ postgres_db }}]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pg_backup:
+    image: postgres:16
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data:ro
+      - {{ db_stack_backup_dir }}:{{ db_stack_backup_dir }}
+      - ./pg_backup.sh:/usr/local/bin/pg_backup.sh
+    environment:
+      POSTGRES_USER: {{ postgres_user }}
+      POSTGRES_DB: {{ postgres_db }}
+      PGPASSWORD: {{ postgres_password }}
+      POSTGRES_PASSWORD: {{ postgres_password }}
+      BACKUP_DIR: {{ db_stack_backup_dir }}
+      BACKUP_RETENTION_DAYS: {{ backup_retention_days }}
+    entrypoint: ["/bin/sh", "/usr/local/bin/pg_backup.sh"]
+    networks:
+      - internal
+      
+volumes:
+  pgdata:
+  pgbackup:
+
+networks:
+  internal:
+    driver: bridge

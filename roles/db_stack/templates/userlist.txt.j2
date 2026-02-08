@@ -1,0 +1,2 @@
+"{{ postgres_user }}" "md5{{ (postgres_password + postgres_user) | hash('md5') }}"
+"stats" "md5{{ (pgbouncer_stats_password + 'stats') | hash('md5') }}"

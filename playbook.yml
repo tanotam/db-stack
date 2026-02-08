@@ -1,0 +1,6 @@
+- hosts: db
+  become: true
+  vars_files:
+    - roles/db_stack/vars/vault.yml
+  roles:
+    - db_stack

@@ -1,0 +1,14 @@
+db_stack_project_dir: /opt/db_stack
+db_stack_backup_dir: /srv/backups/postgres
+
+postgres_image: postgres:16
+pgbouncer_image: edoburu/pgbouncer:latest
+
+postgres_db: postgres
+postgres_user: postgres
+
+postgres_port: 5432
+pgbouncer_port: 6432
+
+backup_retention_days: 7
+backup_cron_time: "0 2 * * *"
