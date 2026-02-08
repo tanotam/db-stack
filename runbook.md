@@ -15,7 +15,7 @@ ansible-playbook -i inventory.yml playbook.yml --ask-pass --ask-vault-pass --ask
 Notes:
 
 - For VM used only password type SSH connection and required sudo password
-- Vault password is required for database and PgBouncer credentials.
+- Vault password is required for database and PgBouncer credentials. (for this configuration it`s 12345)
 - The stack includes:
   - PostgreSQL
   - PgBouncer
@@ -84,4 +84,5 @@ tail -f /srv/backups/postgres/backup.log
 ```
 
 This shows when backups are created and which old backups were deleted.
+
 
